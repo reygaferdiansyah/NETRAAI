@@ -1,0 +1,24 @@
+<<<<<<< HEAD
+from pathlib import Path
+import sys
+
+# Dapatkan jalur direktori instalasi Python
+python_installation_path = Path(sys.prefix)
+
+# Buat jalur ke direktori Scripts
+scripts_path = python_installation_path / 'Scripts'
+
+print("Python installation path:", python_installation_path)
+=======
+from pathlib import Path
+import sys
+
+# Dapatkan jalur direktori instalasi Python
+python_installation_path = Path(sys.prefix)
+
+# Buat jalur ke direktori Scripts
+scripts_path = python_installation_path / 'Scripts'
+
+print("Python installation path:", python_installation_path)
+>>>>>>> 824598abbc5d791f5975d5fb1f6289487c5bee41
+print("Scripts directory path:",scripts_path)
