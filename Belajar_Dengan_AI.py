@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import streamlit as st
 import azure.cognitiveservices.speech as speechsdk
 from openai import AzureOpenAI
@@ -100,4 +99,3 @@ if user_input:
     st.write("Chatbot:", bot_response)
 
     text_to_speech(bot_response)
->>>>>>> 824598abbc5d791f5975d5fb1f6289487c5bee41
