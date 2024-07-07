@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from audio_recorder_streamlit import audio_recorder
 import time
+import pygame
 
 load_dotenv('./.env', override=True)
 
@@ -23,6 +24,9 @@ client = AzureOpenAI(
     api_key=api_key,
     api_version="2024-02-01",
 )
+
+# Inisialisasi pygame untuk pemutaran audio
+pygame.mixer.init()
 
 # Function to perform Speech-to-Text (STT)
 def speech_to_text(file_path):
@@ -48,7 +52,6 @@ def speech_to_text(file_path):
     except Exception as e:
         return f"An error occurred: {e}"
 
-        
 # Fungsi untuk melakukan Text-to-Speech (TTS)
 def text_to_speech(text):
     try:
@@ -60,8 +63,10 @@ def text_to_speech(text):
         synthesizer.speak_text_async(text).get()
 
         # Play the audio file (alternative method)
-        audio_file = open("output.wav", "rb").read()
-        st.audio(audio_file, format="audio/wav")
+        pygame.mixer.music.load("output.wav")
+        pygame.mixer.music.play()
+        while pygame.mixer.music.get_busy():  # Wait for the audio to finish playing
+            continue
     except Exception as e:
         st.error(f"Error in TTS: {e}")
 
