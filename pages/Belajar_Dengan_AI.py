@@ -3,7 +3,6 @@ import azure.cognitiveservices.speech as speechsdk
 from openai import AzureOpenAI
 import os
 from dotenv import load_dotenv
-
 from audio_recorder_streamlit import audio_recorder
 import time
 
@@ -52,11 +51,19 @@ def speech_to_text(file_path):
         
 # Fungsi untuk melakukan Text-to-Speech (TTS)
 def text_to_speech(text):
-    speech_config = speechsdk.SpeechConfig(subscription=SPEECH_KEY, region=SERVICE_REGION)
-    audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
+    try:
+        speech_config = speechsdk.SpeechConfig(subscription=SPEECH_KEY, region=SERVICE_REGION)
+        # Using default speaker might cause issues, try alternative configuration
+        audio_config = speechsdk.audio.AudioOutputConfig(filename="output.wav")
 
-    synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
-    synthesizer.speak_text_async(text).get()
+        synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
+        synthesizer.speak_text_async(text).get()
+
+        # Play the audio file (alternative method)
+        audio_file = open("output.wav", "rb").read()
+        st.audio(audio_file, format="audio/wav")
+    except Exception as e:
+        st.error(f"Error in TTS: {e}")
 
 # Function for interacting with the OpenAI Chatbot
 def get_chatbot_response(user_input):
