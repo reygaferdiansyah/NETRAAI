@@ -25,43 +25,49 @@ client = AzureOpenAI(
     api_version="2024-02-01",
 )
 
+
 # Fungsi untuk melakukan Speech-to-Text (STT)
 def speech_to_text(file_path):
-    speech_config = speechsdk.SpeechConfig(subscription=SPEECH_KEY, region=SERVICE_REGION)
-    source_language_config = speechsdk.languageconfig.SourceLanguageConfig("id-ID")
-    audio_config = speechsdk.audio.AudioConfig(filename=file_path)
-    speech_recognizer = speechsdk.SpeechRecognizer(
-        speech_config=speech_config,
-        source_language_config=source_language_config,
-        audio_config=audio_config
-    )
-    
-    result = speech_recognizer.recognize_once()
-    
-    if result.reason == speechsdk.ResultReason.RecognizedSpeech:
-        return result.text
-    elif result.reason == speechsdk.ResultReason.NoMatch:
-        return "Maaf, saya tidak bisa menangkap suara Anda."
-    elif result.reason == speechsdk.ResultReason.Canceled:
-        cancellation_details = result.cancellation_details
-        return f"Pencarian Dibatalkan: {cancellation_details.reason}"
+    try:
+        speech_config = speechsdk.SpeechConfig(subscription=SPEECH_KEY, region=SERVICE_REGION)
+        source_language_config = speechsdk.languageconfig.SourceLanguageConfig("id-ID")
+        audio_config = speechsdk.audio.AudioConfig(filename=file_path)
+        speech_recognizer = speechsdk.SpeechRecognizer(
+            speech_config=speech_config,
+            source_language_config=source_language_config,
+            audio_config=audio_config
+        )
+        
+        result = speech_recognizer.recognize_once()
+        
+        if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+            return result.text
+        elif result.reason == speechsdk.ResultReason.NoMatch:
+            return "Maaf, saya tidak bisa menangkap suara Anda."
+        elif result.reason == speechsdk.ResultReason.Canceled:
+            cancellation_details = result.cancellation_details
+            return f"Pencarian Dibatalkan: {cancellation_details.reason}"
+    except Exception as e:
+        return f"An error occurred: {e}"
 
-# Fungsi untuk melakukan Text-to-Speech (TTS)
+# Text-to-Speech function
 def text_to_speech(text):
-    speech_config = speechsdk.SpeechConfig(subscription=SPEECH_KEY, region=SERVICE_REGION)
-    audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
+    try:
+        speech_config = speechsdk.SpeechConfig(subscription=SPEECH_KEY, region=SERVICE_REGION)
+        audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
 
-    synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
-    synthesizer.speak_text_async(text).get()
+        synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
+        synthesizer.speak_text_async(text).get()
+    except Exception as e:
+        st.error(f"An error occurred during TTS: {e}")
 
-# Fungsi untuk interaksi dengan OpenAI Chatbot
+
+# Chatbot interaction function
 def get_chatbot_response(user_input):
-    user_input = user_input.lower()
-    user_input = user_input.replace("/", " ").replace("\n", " ").strip()
-
+    user_input = user_input.lower().replace("/", " ").replace("\n", " ").strip()
     if "(id)" not in user_input:
         user_input += " (id)"
-
+    
     response = client.chat.completions.create(
         model=deployment,
         messages=[
@@ -70,7 +76,7 @@ def get_chatbot_response(user_input):
         ],
     )
     
-    bot_response = response.choices[0].message.content
+    return response.choices[0].message.content
 
     return bot_response
 
@@ -79,7 +85,6 @@ st.title("NETRA AI")
 st.header("Belajar Interaktif dengan AI")
 
 st.header('Record Conversation')
-recorder_path = f'outputs/recording/{time.strftime("%Y%m%d-%H%M%S")}.wav'
 audio_bytes = audio_recorder("Click to record", "Click to stop recording")
 transcription = st.session_state.get('transcription', "")
 if audio_bytes:
@@ -92,10 +97,9 @@ if transcript:
     st.session_state['transcription'] = transcription
 st.text(f'Transcription: {transcription}')
 
-# Menggunakan variabel transcription sebagai user_input
+# Use transcription as user input
 user_input = transcription
 if user_input:
     bot_response = get_chatbot_response(user_input)
     st.write("Chatbot:", bot_response)
-
     text_to_speech(bot_response)
