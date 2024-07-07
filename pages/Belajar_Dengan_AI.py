@@ -5,7 +5,6 @@ import os
 from dotenv import load_dotenv
 from audio_recorder_streamlit import audio_recorder
 import time
-import base64
 
 load_dotenv('./.env', override=True)
 
@@ -49,6 +48,7 @@ def speech_to_text(file_path):
     except Exception as e:
         return f"An error occurred: {e}"
 
+        
 # Fungsi untuk melakukan Text-to-Speech (TTS)
 def text_to_speech(text):
     try:
@@ -59,18 +59,9 @@ def text_to_speech(text):
         synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
         synthesizer.speak_text_async(text).get()
 
-        # Encode audio to base64
-        with open("output.wav", "rb") as audio_file:
-            audio_bytes = audio_file.read()
-            audio_base64 = base64.b64encode(audio_bytes).decode()
-
-        # Create HTML5 audio element with autoplay
-        audio_html = f"""
-            <audio autoplay>
-                <source src="data:audio/wav;base64,{audio_base64}" type="audio/wav">
-            </audio>
-        """
-        st.markdown(audio_html, unsafe_allow_html=True)
+        # Play the audio file (alternative method)
+        audio_file = open("output.wav", "rb").read()
+        st.audio(audio_file, format="audio/wav")
     except Exception as e:
         st.error(f"Error in TTS: {e}")
 
