@@ -8,7 +8,7 @@ from audio_recorder_streamlit import audio_recorder
 load_dotenv()
 
 st.title('NETRA AI')
-st.header('Latihan Soal Essay Dan Pilihan Ganda')
+st.header('Latihan Soal Essay dan Pilihan Ganda')
 # 1. Guru upload gambar/pdf
 uploaded_file = st.file_uploader("Upload a file (image or PDF)")
 if uploaded_file is not None:
