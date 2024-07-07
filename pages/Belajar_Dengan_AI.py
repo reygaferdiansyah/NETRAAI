@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from audio_recorder_streamlit import audio_recorder
 import time
 
+# Load environment variables
 load_dotenv('./.env', override=True)
 
 # Konfigurasi Azure Cognitive Services
@@ -13,8 +14,8 @@ SPEECH_KEY = os.getenv('SPEECH_KEY')
 SERVICE_REGION = os.getenv('SERVICE_REGION')
 
 # Konfigurasi Azure OpenAI
-endpoint = os.environ["AZURE_OPENAI_ENDPOINT"]
-api_key = os.environ["AZURE_OPENAI_API_KEY"]
+endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+api_key = os.getenv("AZURE_OPENAI_API_KEY")
 deployment = "gpt-35-turbo"
 
 # Inisialisasi Azure OpenAI client
@@ -24,53 +25,43 @@ client = AzureOpenAI(
     api_version="2024-02-01",
 )
 
-# Function to perform Speech-to-Text (STT)
+# Fungsi untuk melakukan Speech-to-Text (STT)
 def speech_to_text(file_path):
-    try:
-        speech_config = speechsdk.SpeechConfig(subscription=SPEECH_KEY, region=SERVICE_REGION)
-        source_language_config = speechsdk.languageconfig.SourceLanguageConfig("id-ID")
-        audio_config = speechsdk.audio.AudioConfig(filename=file_path)
-        speech_recognizer = speechsdk.SpeechRecognizer(
-            speech_config=speech_config,
-            source_language_config=source_language_config,
-            audio_config=audio_config
-        )
-        
-        result = speech_recognizer.recognize_once()
-        
-        if result.reason == speechsdk.ResultReason.RecognizedSpeech:
-            return result.text
-        elif result.reason == speechsdk.ResultReason.NoMatch:
-            return "Maaf, saya tidak bisa menangkap suara Anda."
-        elif result.reason == speechsdk.ResultReason.Canceled:
-            cancellation_details = result.cancellation_details
-            return f"Pencarian Dibatalkan: {cancellation_details.reason}"
-    except Exception as e:
-        return f"An error occurred: {e}"
+    speech_config = speechsdk.SpeechConfig(subscription=SPEECH_KEY, region=SERVICE_REGION)
+    source_language_config = speechsdk.languageconfig.SourceLanguageConfig("id-ID")
+    audio_config = speechsdk.audio.AudioConfig(filename=file_path)
+    speech_recognizer = speechsdk.SpeechRecognizer(
+        speech_config=speech_config,
+        source_language_config=source_language_config,
+        audio_config=audio_config
+    )
+    
+    result = speech_recognizer.recognize_once()
 
-        
+    if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+        return result.text
+    elif result.reason == speechsdk.ResultReason.NoMatch:
+        return "Maaf, saya tidak bisa mengenali suara Anda."
+    elif result.reason == speechsdk.ResultReason.Canceled:
+        cancellation_details = result.cancellation_details
+        return f"Pencarian Dibatalkan: {cancellation_details.reason}"
+
 # Fungsi untuk melakukan Text-to-Speech (TTS)
 def text_to_speech(text):
-    try:
-        speech_config = speechsdk.SpeechConfig(subscription=SPEECH_KEY, region=SERVICE_REGION)
-        # Using default speaker might cause issues, try alternative configuration
-        audio_config = speechsdk.audio.AudioOutputConfig(filename="output.wav")
+    speech_config = speechsdk.SpeechConfig(subscription=SPEECH_KEY, region=SERVICE_REGION)
+    audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
 
-        synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
-        synthesizer.speak_text_async(text).get()
+    synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
+    synthesizer.speak_text_async(text).get()
 
-        # Play the audio file (alternative method)
-        audio_file = open("output.wav", "rb").read()
-        st.audio(audio_file, format="audio/wav")
-    except Exception as e:
-        st.error(f"Error in TTS: {e}")
-
-# Function for interacting with the OpenAI Chatbot
+# Fungsi untuk interaksi dengan OpenAI Chatbot
 def get_chatbot_response(user_input):
-    user_input = user_input.lower().replace("/", " ").replace("\n", " ").strip()
+    user_input = user_input.lower()
+    user_input = user_input.replace("/", " ").replace("\n", " ").strip()
+
     if "(id)" not in user_input:
         user_input += " (id)"
-    
+
     response = client.chat.completions.create(
         model=deployment,
         messages=[
@@ -79,43 +70,35 @@ def get_chatbot_response(user_input):
         ],
     )
     
-    return response.choices[0].message.content
+    bot_response = response.choices[0].message.content
+
+    return bot_response
 
 # Streamlit UI
 st.title("NETRA AI")
-st.header("Belajar Interaktif dengan AI")
+st.header("Interaksi Dengan AI Untuk Belajar")
 
-st.header('Record Conversation')
-audio_bytes = audio_recorder("Click to record", "Click to stop recording")
-transcription = st.session_state.get('transcription', "")
+st.subheader('Rekam Percakapan')
+recorder_path = f'outputs/recording/{time.strftime("%Y%m%d-%H%M%S")}.wav'
+audio_bytes = audio_recorder("Klik untuk merekam", "Klik untuk menghentikan perekaman")
 
 if audio_bytes:
     st.audio(audio_bytes, format="audio/wav")
 
-transcript = st.button('Transcript', type='primary')
+transcription = st.session_state.get('transcription', "")
+transcript_button = st.button('Transkripsi', key='transcribe_button')
 
-if transcript:
-    # Generate a new recorder_path if not already defined
-    if 'recorder_path' not in st.session_state:
-        st.session_state['recorder_path'] = f'outputs/recording/{time.strftime("%Y%m%d-%H%M%S")}.wav'
-
-    # Write audio bytes to recorder_path
-    with open(st.session_state['recorder_path'], 'wb+') as f:
+if transcript_button:
+    with open(recorder_path, 'wb+') as f:
         f.write(audio_bytes)
+    
+    transcription = speech_to_text(recorder_path)
+    st.text(f'Transkripsi: {transcription}')
 
-    # Perform speech to text conversion (example placeholder)
-    transcription = speech_to_text(st.session_state['recorder_path'])
+    if transcription:
+        bot_response = get_chatbot_response(transcription)
+        st.write("Chatbot:", bot_response)
+        text_to_speech(bot_response)
 
-    # Store transcription in session state
-    st.session_state['transcription'] = transcription
-
-# Display transcription
-st.text(f'Transcription: {transcription}')
-
-# Use transcription as user input
-user_input = transcription
-
-if user_input:
-    bot_response = get_chatbot_response(user_input)
-    st.write("Chatbot:", bot_response)
-    text_to_speech(bot_response)
+        # Simpan transkripsi ke dalam session state
+        st.session_state['transcription'] = transcription
