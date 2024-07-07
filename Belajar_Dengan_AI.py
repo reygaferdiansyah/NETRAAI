@@ -25,8 +25,7 @@ client = AzureOpenAI(
     api_version="2024-02-01",
 )
 
-
-# Fungsi untuk melakukan Speech-to-Text (STT)
+# Function to perform Speech-to-Text (STT)
 def speech_to_text(file_path):
     try:
         speech_config = speechsdk.SpeechConfig(subscription=SPEECH_KEY, region=SERVICE_REGION)
@@ -50,7 +49,7 @@ def speech_to_text(file_path):
     except Exception as e:
         return f"An error occurred: {e}"
 
-# Text-to-Speech function
+# Function for Text-to-Speech (TTS)
 def text_to_speech(text):
     try:
         speech_config = speechsdk.SpeechConfig(subscription=SPEECH_KEY, region=SERVICE_REGION)
@@ -61,8 +60,7 @@ def text_to_speech(text):
     except Exception as e:
         st.error(f"An error occurred during TTS: {e}")
 
-
-# Chatbot interaction function
+# Function for interacting with the OpenAI Chatbot
 def get_chatbot_response(user_input):
     user_input = user_input.lower().replace("/", " ").replace("\n", " ").strip()
     if "(id)" not in user_input:
@@ -78,27 +76,47 @@ def get_chatbot_response(user_input):
     
     return response.choices[0].message.content
 
-    return bot_response
-
 # Streamlit UI
 st.title("NETRA AI")
 st.header("Belajar Interaktif dengan AI")
 
+# Placeholder for document_path (replace this with your actual logic)
+document_path = st.text_input("Enter document path")
+
+# Adjust recorder_path based on document_path (example placeholder)
+if document_path:
+    recorder_path = document_path.replace('document', 'recorder') + '.wav'
+
 st.header('Record Conversation')
 audio_bytes = audio_recorder("Click to record", "Click to stop recording")
 transcription = st.session_state.get('transcription', "")
+
 if audio_bytes:
     st.audio(audio_bytes, format="audio/wav")
+
 transcript = st.button('Transcript', type='primary')
+
 if transcript:
-    with open(recorder_path, 'wb+') as f:
+    # Generate a new recorder_path if not already defined
+    if 'recorder_path' not in st.session_state:
+        st.session_state['recorder_path'] = f'outputs/recording/{time.strftime("%Y%m%d-%H%M%S")}.wav'
+
+    # Write audio bytes to recorder_path
+    with open(st.session_state['recorder_path'], 'wb+') as f:
         f.write(audio_bytes)
-    transcription = speech_to_text(recorder_path)
+
+    # Perform speech to text conversion (example placeholder)
+    transcription = speech_to_text(st.session_state['recorder_path'])
+
+    # Store transcription in session state
     st.session_state['transcription'] = transcription
+
+# Display transcription
 st.text(f'Transcription: {transcription}')
 
 # Use transcription as user input
 user_input = transcription
+
 if user_input:
     bot_response = get_chatbot_response(user_input)
     st.write("Chatbot:", bot_response)
