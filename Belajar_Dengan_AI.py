@@ -49,16 +49,14 @@ def speech_to_text(file_path):
     except Exception as e:
         return f"An error occurred: {e}"
 
-# Function for Text-to-Speech (TTS)
+        
+# Fungsi untuk melakukan Text-to-Speech (TTS)
 def text_to_speech(text):
-    try:
-        speech_config = speechsdk.SpeechConfig(subscription=SPEECH_KEY, region=SERVICE_REGION)
-        audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
+    speech_config = speechsdk.SpeechConfig(subscription=SPEECH_KEY, region=SERVICE_REGION)
+    audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
 
-        synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
-        synthesizer.speak_text_async(text).get()
-    except Exception as e:
-        st.error(f"An error occurred during TTS: {e}")
+    synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
+    synthesizer.speak_text_async(text).get()
 
 # Function for interacting with the OpenAI Chatbot
 def get_chatbot_response(user_input):
@@ -79,13 +77,6 @@ def get_chatbot_response(user_input):
 # Streamlit UI
 st.title("NETRA AI")
 st.header("Belajar Interaktif dengan AI")
-
-# Placeholder for document_path (replace this with your actual logic)
-document_path = st.text_input("Enter document path")
-
-# Adjust recorder_path based on document_path (example placeholder)
-if document_path:
-    recorder_path = document_path.replace('document', 'recorder') + '.wav'
 
 st.header('Record Conversation')
 audio_bytes = audio_recorder("Click to record", "Click to stop recording")
