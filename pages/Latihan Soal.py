@@ -40,7 +40,6 @@ if question:
 
 st.text(f'audio_path: {audio_path}')
 
-
 # 4. Record jawaban + 5. STT
 recorder_path = st.session_state.get('recorder_path')
 if document_path:
@@ -68,7 +67,18 @@ if submit:
         st.session_state['is_correct'] = is_correct
         st.session_state['explanation'] = explanation
 
+        # Tambahkan TTS untuk hasil grading dan penjelasan
+        grade_audio_path = document_path.replace('document', 'grade') + '.wav'
+        grade_text = f'Jawaban kamu: {is_correct}. Penjelasan: {explanation}'
+        ai.tts(grade_text, audio_path=grade_audio_path)
+        st.session_state['grade_audio_path'] = grade_audio_path
+
 is_correct = st.session_state.get('is_correct', None)
 explanation = st.session_state.get('explanation', None)
+grade_audio_path = st.session_state.get('grade_audio_path', None)
+
 st.markdown(f'Jawaban kamu: {is_correct}')
 st.markdown(f'Penjelasan: {explanation}')
+
+if grade_audio_path:
+    st.audio(grade_audio_path, format="audio/wav", start_time=0)
